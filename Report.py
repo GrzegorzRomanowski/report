@@ -106,25 +106,25 @@ def warning(w):
 
 
 # Locations of the files
-path_E1 = "C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\E" + ebawe + " " + dd + "." + mm + "." + yyyy + ".xlsx"
+path_E1 = "S:\\RAPORTY - ELEMENTY WYPRODUKOWANE\\E " + ebawe + "\\" + yyyy + "r\\" + mm + "." + yyyy + "\\E" + ebawe + "." + dd + "." + mm + '.' + yyyy + ".xlsx"
 
 
-if os.path.isfile("C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx"):
-    path_daily = "C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx"
+if os.path.isfile("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\" + yyyy + "\\" + mm + "." + yyyy + "\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx"):
+    path_daily = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\" + yyyy + "\\" + mm + "." + yyyy + "\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx"
 else:
-    path_daily = "C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\Szablon.xlsx"
+    path_daily = "C:\\Raporty\\Szablon.xlsx"
 
 
-if os.path.isfile("C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\Produkcja płyt wg projektów - " + yyyy + " - powierzchnia do raportu_GR.xlsx"):
-    pow_do_raportu = "C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\Produkcja płyt wg projektów - " + yyyy + " - powierzchnia do raportu_GR.xlsx"
+if os.path.isfile("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + "_GR.xlsx"):
+    pow_do_raportu = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + "_GR.xlsx"
 else:
-    pow_do_raportu = "C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\Produkcja płyt wg projektów - " + yyyy + " - powierzchnia do raportu.xlsx"
+    pow_do_raportu = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + ".xlsx"
 
 
-if os.path.isfile("C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\" + mm + "." + yyyy + " - zestawienie miesięczne, tutaj sumy z raportów_GR.xlsx"):
-    path_month = "C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\" + mm + "." + yyyy + " - zestawienie miesięczne, tutaj sumy z raportów_GR.xlsx"
+if os.path.isfile("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\Zestawienie miesieczne produkcji\\" + yyyy + "\\" + mm + "." + yyyy + "_GR.xlsx"):
+    path_month = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\Zestawienie miesieczne produkcji\\" + yyyy + "\\" + mm + "." + yyyy + "_GR.xlsx"
 else:
-    path_month = "C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\" + mm + "." + yyyy + " - zestawienie miesięczne, tutaj sumy z raportów.xlsx"
+    path_month = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\Zestawienie miesieczne produkcji\\" + yyyy + "\\" + mm + "." + yyyy + ".xlsx"
 
 # Load workbooks and sheets
 try:
@@ -167,7 +167,15 @@ for i in range(1, E1_max_row):
         else:
             project_E1_list[z-1].append(project_E1_list[z][1]-project_E1_list[z-1][1]-6)
         z += 1
-project_E1_list[-1].append(E1_max_row-project_E1_list[-1][1]-7)
+# project_E1_list[-1].append(E1_max_row-project_E1_list[-1][1]-7)
+col_of_last_proj = project_E1_list[-1][1]
+x = 0
+while True:
+    if sheet_E1.cell(column=3, row=col_of_last_proj+x+3).value is None:
+        break
+    x += 1
+project_E1_list[-1].append(x)
+print(project_E1_list)
 
 
 # Making a daily report - copy from E1 report to daily report
@@ -370,15 +378,17 @@ Sprawdź, czy projekt znajduje się w tabeli
 z miesięcznym raportem i czy jest poprawnie wpisany.
 Nastepnie uruchom skrypt ponownie."""
                         warning(war)
-# Saving files
+
+
+# Saving temporary file
 if safe_to_save == 1:
-    wb_daily.save("C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx")
-    wb_pow_do_raportu.save("C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\Produkcja płyt wg projektów - " + yyyy + " - powierzchnia do raportu_GR.xlsx")
+    wb_daily.save("C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
+    # wb_pow_do_raportu.save("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + "_GR.xlsx")
 
 
 # Filling month report
 # sheet_month_E1.insert_cols(15) - NIE UŻYWAĆ, BO PSUJE CAŁĄ TABELE EXCELA !!!
-excel = ExcelCompiler(filename="C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx")
+excel = ExcelCompiler(filename="C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
 for i in project_E1_list:
     col_index = "test"
     proj = i[0]
@@ -388,10 +398,9 @@ for i in project_E1_list:
     try:
         col_index += 0
     except (NameError, TypeError):
+        os.remove("C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
         war = "Nie znaleziono odpowiedniego projektu\nw Excelu z miesięcznym raportem:\n\n" + str(proj)\
-              + """\n\nSkrypt zamknie się bez zapisywania zmian w zestawieniu miesięcznym.
-Raport dzienny i tabela z powierzchniami brutto
-zostały przeprocesowane prawidłowo.
+              + """\n\nSkrypt zamknie się bez zapisywania żadnych zmian.
 
 Sprawdź, czy projekt znajduje się w tabeli
 z miesięcznym raportem i czy jest poprawnie wpisany.
@@ -399,17 +408,26 @@ Nastepnie uruchom skrypt ponownie."""
         warning(war)
     row_index_to_evaluate = i[1]+i[2]+4
     evaluated_value = excel.evaluate('E' + str(ebawe) + '!F' + str(row_index_to_evaluate))
-    print(evaluated_value)
     for dict_value in i[4].values():
         evaluated_value -= dict_value
-        print(evaluated_value)
-    sheet_month_E1.cell(row=int(dd)+5, column=col_index).value = evaluated_value
     len_dict = len(i[4])
-    for el in range(len_dict):
-        sheet_month_E1.cell(row=int(dd)+5, column=col_index+el+1).value = i[4][sheet_month_E1.cell(row=2, column=col_index+el+1).value]
+    if len_dict == 0:
+        sheet_month_E1.cell(row=int(dd) + 5, column=col_index).value = evaluated_value
+    else:
+        for key in i[4].keys():
+            for product in range(0, 10):
+                if key == sheet_month_E1.cell(row=2, column=col_index + product).value and (
+                        sheet_month_E1.cell(row=1, column=col_index + product).value == i[0] or sheet_month_E1.cell(
+                        row=1, column=col_index + product).value is None):
+                    sheet_month_E1.cell(row=int(dd) + 5, column=col_index + product).value = i[4][key]
+                    break
 
-# Saving month report
+
+# Saving all report files
 if safe_to_save == 1:
-    wb_month.save("C:\\Dane\\Python\\Wlasne\\Report\\Raporty Inbet\\" + mm + "." + yyyy + " - zestawienie miesięczne, tutaj sumy z raportów_GR.xlsx")
+    wb_month.save("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\Zestawienie miesieczne produkcji\\" + yyyy + "\\" + mm + "." + yyyy + "_GR.xlsx")
+    wb_daily.save("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\" + yyyy + "\\" + mm + "." + yyyy + "\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx")
+    wb_pow_do_raportu.save("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + "_GR.xlsx")
+    os.remove("C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
 
     warning("JUŻ  :)")
