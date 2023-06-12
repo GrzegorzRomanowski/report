@@ -10,7 +10,7 @@ from pycel import ExcelCompiler
 
 # Adjusting style
 # color
-yellow_fill = PatternFill(start_color='FFFFFF00', end_color='FFFFFF00', fill_type='solid')
+yellow_fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
 zlecenie_fill = PatternFill(start_color='DCDCDC', end_color='DCDCDC', fill_type='solid')
 title_fill = PatternFill(start_color='F0E68C', end_color='F0E68C', fill_type='solid')
 summary_fill = PatternFill(start_color='FFC000', end_color='FFC000', fill_type='solid')
@@ -26,11 +26,6 @@ font_bold = Font(bold=True)
 
 
 # Hardcoded data and variables
-# Date
-# dd = "09"
-# mm = "02"
-# yyyy = "2023"
-# ebawe = "1"
 safe_to_save = 1
 area_found = 0
 additional_sums_written = 0
@@ -248,7 +243,8 @@ Sprawdź numery elementów i uruchom skrypt ponownie."""
         sheet_daily_E1.cell(row=i[1]+y+3, column=9).border = border
         sheet_daily_E1.cell(row=i[1]+y+3, column=6).border = border
         if sheet_pow_do_raportu.cell(row=num+8, column=jj).value is not None:
-            if sheet_pow_do_raportu.cell(row=num + 8, column=jj).fill.start_color.index != 'FFFFFF00':
+            test_color1 = str(sheet_pow_do_raportu.cell(row=num + 8, column=jj).fill.start_color.index)
+            if test_color1[-6:] != 'FFFF00':
                 sheet_daily_E1.cell(row=i[1]+y+3, column=6).value = sheet_pow_do_raportu.cell(row=num+8, column=jj).value
                 sheet_pow_do_raportu.cell(row=num+8, column=jj).fill = yellow_fill
             else:
@@ -262,7 +258,8 @@ Zweryfikuj błąd i uruchom skrypt ponownie."""
             # Looking for the area in the next 10 columns on the right
             for index_increase in range(1, 10):
                 if sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).value is not None:
-                    if sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).fill.start_color.index != 'FFFFFF00':
+                    test_color2 = str(sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).fill.start_color.index)
+                    if test_color2[-6:] != 'FFFF00':
                         sheet_daily_E1.cell(row=i[1]+y+3, column=6).value = sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).value
                         sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).fill = yellow_fill
                         sheet_daily_E1.cell(row=i[1]+y+3, column=11).value = sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).value
@@ -333,15 +330,21 @@ for i in small_rows:
 
 # Painting green "pow_do_raportu"
 for col in sheet_pow_do_raportu.iter_cols(min_row=9, min_col=2, max_col=pow_do_raportu_max_col, max_row=pow_do_raportu_max_row):
-    proj_done = 1
+    proj_done = 0
     for cell in col:
-        if cell.value is not None and cell.fill.start_color.index != 'FFFFFF00':
+        if cell.value is not None:
+            proj_done = 1
+            break
+    for cell in col:
+        test_color3 = str(cell.fill.start_color.index)
+        if cell.value is not None and test_color3[-6:] != 'FFFF00':
             proj_done = 0
             break
     if proj_done == 1:
         sheet_pow_do_raportu.cell(row=4, column=col[4].column).fill = green_fill
         sheet_pow_do_raportu.cell(row=5, column=col[5].column).fill = green_fill
 for proj in project_E1_list:
+    stop_painting = 0
     for proj2 in row_1_pow_do_raportu:
         if proj[0] == proj2.value:
             list_of_proj_to_paint = [proj2]
@@ -354,8 +357,10 @@ for proj in project_E1_list:
             len_to_paint = len(list_of_proj_to_paint)
             paint_or_not = 1
             for u in range(0, len_to_paint):
-                if sheet_pow_do_raportu.cell(row=4, column=list_of_proj_to_paint[u].column).fill.start_color.index != '00548235':
+                test_color4 = str(sheet_pow_do_raportu.cell(row=4, column=list_of_proj_to_paint[u].column).fill.start_color.index)
+                if test_color4[-6:] != '548235':
                     paint_or_not = 0
+                    break
             if paint_or_not == 1:
                 for proj3 in row_1_month_E1:
                     if proj[0] == proj3.value:
@@ -366,10 +371,17 @@ for proj in project_E1_list:
                     sheet_pow_do_raportu.cell(row=3, column=proj2_col+u).fill = green_fill
                     # Painting yellow "month report"
                     try:
-                        sheet_month_E1.cell(row=1, column=proj3_col+u).fill = yellow_fill
-                        sheet_month_E1.cell(row=2, column=proj3_col+u).fill = yellow_fill
-                        sheet_month_E1.cell(row=3, column=proj3_col+u).fill = yellow_fill
-                        sheet_month_E1.cell(row=4, column=proj3_col+u).fill = yellow_fill
+                        if u == 0:
+                            sheet_month_E1.cell(row=1, column=proj3_col).fill = yellow_fill
+                            sheet_month_E1.cell(row=2, column=proj3_col).fill = yellow_fill
+                            sheet_month_E1.cell(row=3, column=proj3_col).fill = yellow_fill
+                            sheet_month_E1.cell(row=4, column=proj3_col).fill = yellow_fill
+                        else:
+                            if sheet_month_E1.cell(row=1, column=proj3_col+u).value is not None or sheet_month_E1.cell(row=2, column=proj3_col+u).value is None:
+                                stop_painting += 1
+                            if stop_painting == 0:
+                                sheet_month_E1.cell(row=2, column=proj3_col+u).fill = yellow_fill
+                                sheet_month_E1.cell(row=3, column=proj3_col+u).fill = yellow_fill
                     except NameError:
                         war = "Nie znaleziono odpowiedniego projektu\nw Excelu z miesięcznym raportem:\n\n" + str(
                             proj[0]) + """\n\nSkrypt zamknie się bez zapisywania żadnych zmian.
@@ -386,7 +398,7 @@ if safe_to_save == 1:
     # wb_pow_do_raportu.save("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + "_GR.xlsx")
 
 
-# Filling month report
+# Filling month report and ExcelCompiler stuff
 # sheet_month_E1.insert_cols(15) - NIE UŻYWAĆ, BO PSUJE CAŁĄ TABELE EXCELA !!!
 excel = ExcelCompiler(filename="C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
 for i in project_E1_list:
@@ -408,19 +420,30 @@ Nastepnie uruchom skrypt ponownie."""
         warning(war)
     row_index_to_evaluate = i[1]+i[2]+4
     evaluated_value = excel.evaluate('E' + str(ebawe) + '!F' + str(row_index_to_evaluate))
+    # subtracting from the "evaluated value" values from the dictionary
     for dict_value in i[4].values():
         evaluated_value -= dict_value
-    len_dict = len(i[4])
-    if len_dict == 0:
-        sheet_month_E1.cell(row=int(dd) + 5, column=col_index).value = evaluated_value
-    else:
-        for key in i[4].keys():
-            for product in range(0, 10):
-                if key == sheet_month_E1.cell(row=2, column=col_index + product).value and (
-                        sheet_month_E1.cell(row=1, column=col_index + product).value == i[0] or sheet_month_E1.cell(
-                        row=1, column=col_index + product).value is None):
-                    sheet_month_E1.cell(row=int(dd) + 5, column=col_index + product).value = i[4][key]
-                    break
+    # writing "evaluated value" in daily report
+    for cell in row_1_pow_do_raportu:
+        if cell.value == proj:
+            col_index2 = cell.column
+    if evaluated_value > 0.02:
+        sheet_daily_E1.cell(row=row_index_to_evaluate, column=10).value = sheet_pow_do_raportu.cell(row=5, column=col_index2).value
+        sheet_daily_E1.cell(row=row_index_to_evaluate, column=11).value = evaluated_value
+        sheet_daily_E1.cell(row=row_index_to_evaluate, column=10).fill = summary_fill
+        sheet_daily_E1.cell(row=row_index_to_evaluate, column=11).fill = summary_fill
+        sheet_daily_E1.cell(row=row_index_to_evaluate, column=10).border = border
+        sheet_daily_E1.cell(row=row_index_to_evaluate, column=11).border = border
+        # adding "evaluated value" to the dictionary
+        i[4][sheet_pow_do_raportu.cell(row=5, column=col_index2).value] = evaluated_value
+    # actual completion of the monthly report
+    for key in i[4].keys():
+        for product in range(0, 10):
+            if key == sheet_month_E1.cell(row=2, column=col_index + product).value and (
+                    sheet_month_E1.cell(row=1, column=col_index + product).value == i[0] or sheet_month_E1.cell(
+                    row=1, column=col_index + product).value is None):
+                sheet_month_E1.cell(row=int(dd) + 5, column=col_index + product).value = i[4][key]
+                break
 
 
 # Saving all report files
