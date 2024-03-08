@@ -1,5 +1,3 @@
-# Excel reporting script
-
 import tkinter as tk
 import sys
 import os
@@ -9,19 +7,19 @@ from pycel import ExcelCompiler
 
 
 # Adjusting style
-# color
+# colors
 yellow_fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
 zlecenie_fill = PatternFill(start_color='DCDCDC', end_color='DCDCDC', fill_type='solid')
 title_fill = PatternFill(start_color='F0E68C', end_color='F0E68C', fill_type='solid')
 summary_fill = PatternFill(start_color='FFC000', end_color='FFC000', fill_type='solid')
 pink_fill = PatternFill(start_color='BDD7EE', end_color='BDD7EE', fill_type='solid')
 green_fill = PatternFill(start_color='548235', end_color='548235', fill_type='solid')
-# border
+# borders
 edge = Side(border_style='thin', color='000000')
 edge2 = Side(border_style='thick', color='000000')
 border = Border(top=edge, bottom=edge, left=edge, right=edge)
 border2 = Border(top=edge2, bottom=edge2, left=edge2, right=edge2)
-# font
+# fonts
 font_bold = Font(bold=True)
 
 
