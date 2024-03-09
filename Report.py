@@ -13,16 +13,16 @@ from config import Config
 # Adjusting style
 # colors
 yellow_fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-zlecenie_fill = PatternFill(start_color='DCDCDC', end_color='DCDCDC', fill_type='solid')
+grey_fill = PatternFill(start_color='DCDCDC', end_color='DCDCDC', fill_type='solid')
 title_fill = PatternFill(start_color='F0E68C', end_color='F0E68C', fill_type='solid')
 summary_fill = PatternFill(start_color='FFC000', end_color='FFC000', fill_type='solid')
 pink_fill = PatternFill(start_color='BDD7EE', end_color='BDD7EE', fill_type='solid')
 green_fill = PatternFill(start_color='548235', end_color='548235', fill_type='solid')
 # borders
 edge = Side(border_style='thin', color='000000')
-edge2 = Side(border_style='thick', color='000000')
+thick_edge = Side(border_style='thick', color='000000')
 border = Border(top=edge, bottom=edge, left=edge, right=edge)
-border2 = Border(top=edge2, bottom=edge2, left=edge2, right=edge2)
+thick_border = Border(top=thick_edge, bottom=thick_edge, left=thick_edge, right=thick_edge)
 # fonts
 font_bold = Font(bold=True)
 
@@ -33,11 +33,6 @@ mm = str()
 yyyy = str()
 ebawe = str()
 safe_to_save = 1
-area_found = 0
-additional_sums_written = 0
-# Columns names
-title_tuple = ("Element", "Typ", "Powierzchnia", "Klasa betonu", "Gatunek stali")
-title_index = (3, 4, 6, 7, 9)
 
 # endregion
 
@@ -126,235 +121,237 @@ def warning_msg_box(msg: str, end: bool = True):
 
 
 # region Transform data
-def create_report():
-    # Locations of the files
-    path_E1 = "S:\\RAPORTY - ELEMENTY WYPRODUKOWANE\\E " + ebawe + "\\" + yyyy + "r\\" + mm + "." + yyyy + "\\E" + ebawe + "." + dd + "." + mm + '.' + yyyy + ".xlsx"
-
-
-    if os.path.isfile("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\" + yyyy + "\\" + mm + "." + yyyy + "\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx"):
-        path_daily = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\" + yyyy + "\\" + mm + "." + yyyy + "\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx"
-    else:
-        path_daily = "C:\\Raporty\\Szablon.xlsx"
-
-
-    if os.path.isfile("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + "_GR.xlsx"):
-        pow_do_raportu = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + "_GR.xlsx"
-    else:
-        pow_do_raportu = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + ".xlsx"
-
-
-    if os.path.isfile("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\Zestawienie miesieczne produkcji\\" + yyyy + "\\" + mm + "." + yyyy + "_GR.xlsx"):
-        path_month = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\Zestawienie miesieczne produkcji\\" + yyyy + "\\" + mm + "." + yyyy + "_GR.xlsx"
-    else:
-        path_month = "S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\Zestawienie miesieczne produkcji\\" + yyyy + "\\" + mm + "." + yyyy + ".xlsx"
-
-    # Load workbooks and sheets
-    try:
-        wb_E1 = openpyxl.load_workbook(path_E1)
-    except (FileNotFoundError, NameError):
-        war = """Nie znaleziono pliku z raportem EBAWE.
-    
-    Skrypt zamknie się bez zapisywania żadnych zmian.
-    
-    Sprawdź czy raport jest stworzony.
-    Zweryfikuj jego nazwę, rozszerzenie, lokalizację itp.
-    i uruchom skrypt ponownie."""
-
-        warning_msg_box(war)
-    wb_daily = openpyxl.load_workbook(path_daily)
-    wb_pow_do_raportu = openpyxl.load_workbook(pow_do_raportu)
-    wb_month = openpyxl.load_workbook(path_month)
-    # Get workbook active sheet object from the active attribute or sheet name.
-    sheet_E1 = wb_E1.active
-    sheet_daily_E1 = wb_daily['E'+ebawe]
-    sheet_pow_do_raportu = wb_pow_do_raportu.active
-    sheet_month_E1 = wb_month['E'+ebawe]
-    # row 1 variables
-    row_1_pow_do_raportu = sheet_pow_do_raportu[1]
-    row_1_month_E1 = sheet_month_E1[1]
-    # amount of rows in sheets
-    E1_max_row = sheet_E1.max_row
-    pow_do_raportu_max_row = sheet_pow_do_raportu.max_row
-    pow_do_raportu_max_col = sheet_pow_do_raportu.max_column
-
-    # Create and fill in E1_list of projects
-    project_E1_list = []
-    z = 0
-    for i in range(1, E1_max_row):
-        if sheet_E1.cell(column=5, row=i).value is not None:
-            project_E1_list.append([sheet_E1.cell(column=5, row=i).value, i])
-            if z == 0:
-                None    # intentional omission of the loop operation in the first iteration
-            else:
-                project_E1_list[z-1].append(project_E1_list[z][1]-project_E1_list[z-1][1]-6)
-            z += 1
-    # project_E1_list[-1].append(E1_max_row-project_E1_list[-1][1]-7)
-    col_of_last_proj = project_E1_list[-1][1]
-    x = 0
-    while True:
-        if sheet_E1.cell(column=3, row=col_of_last_proj+x+3).value is None:
-            break
-        x += 1
-    project_E1_list[-1].append(x)
-    print(project_E1_list)
-
-    # Making a daily report - copy from E1 report to daily report
-
-    # For loop for every project in E1 report (project_E1_list)
-    for i in project_E1_list:
-        # Zlecenie
-        sheet_daily_E1.cell(row=i[1], column=1).value = "Zlecenie:"
-        sheet_daily_E1.cell(row=i[1], column=5).value = i[0]
-        sheet_daily_E1.cell(row=i[1], column=1).font = font_bold
-        sheet_daily_E1.cell(row=i[1], column=5).font = font_bold
-        for row in sheet_daily_E1.iter_rows(min_row=i[1], max_row=i[1], min_col=1, max_col=9):
-            for cell in row:
-                cell.fill = zlecenie_fill
-        # Row dimensions
-        sheet_daily_E1.row_dimensions[i[1]+1].height = 4
-        sheet_daily_E1.row_dimensions[i[1]+i[2]+3].height = 4
-        # Columns titles
-        t = 0
-        for title in title_tuple:
-            sheet_daily_E1.cell(row=i[1]+2, column=title_index[t]).value = title
-            t += 1
-        for row in sheet_daily_E1.iter_rows(min_row=i[1]+2, max_row=i[1]+2, min_col=1, max_col=9):
-            for cell in row:
-                cell.fill = title_fill
-        # Sum of elements
-        sheet_daily_E1.cell(row=i[1]+i[2]+4, column=3).value = i[2]
-        sheet_daily_E1.cell(row=i[1]+i[2]+4, column=3).border = border2
-        sheet_daily_E1.cell(row=i[1]+i[2]+4, column=3).fill = summary_fill
-        # Finding proper column index in "pow_do_raportu"
-        for j in row_1_pow_do_raportu:
-            if j.value == i[0]:
-                jj = j.column
+class Report:
+    def __init__(self, config: Config):
+        # Load Workbooks (wb)
         try:
-            jj += 0
-        except NameError:
-            war = "Nie znaleziono odpowiedniego projektu\nw Excelu z powierzchniami brutto.\n\n" + str(i[0])\
-                  + """\n\nSkrypt zamknie się bez zapisywania żadnych zmian.
-    
-    Sprawdź, czy numery projektów są identyczne
-    we wszystkich wejściowych arkuszach excel
-    i uruchom skrypt ponownie."""
-            warning_msg_box(war)
-        # Project description
-        description = sheet_pow_do_raportu.cell(row=2, column=jj).value.replace("\n", " - ")
-        sheet_daily_E1.cell(row=i[1], column=10).value = description
-        i.append(description)
-        # Main data table
-        # While loop for every prefab element in the project
-        y = 0
-        while i[2] > y:
-            area_found = 0
+            self.wb_ebawe = openpyxl.load_workbook(config.EBAWE_REPORT_PATH)
+        except (FileNotFoundError, NameError):
+            warn = "Nie znaleziono pliku z raportem EBAWE.\n\nSkrypt zamknie się bez zapisywania żadnych zmian.\n\n" \
+                   "Sprawdź czy raport jest stworzony.\nZweryfikuj jego nazwę, rozszerzenie, lokalizację itp.\n" \
+                   "i uruchom skrypt ponownie."
+            warning_msg_box(warn)
+        if os.path.isfile(config.DAILY_TEMP_PATH):
+            self.wb_daily = openpyxl.load_workbook(config.DAILY_TEMP_PATH)
+        else:
+            self.wb_daily = openpyxl.load_workbook(config.TEMPLATE_PATH)
+
+        if os.path.isfile(config.YEARLY_TEMP_PATH):
+            self.wb_pow_do_raportu = openpyxl.load_workbook(config.YEARLY_TEMP_PATH)
+        else:
+            self.wb_pow_do_raportu = openpyxl.load_workbook(config.YEARLY_PATH)
+
+        if os.path.isfile(config.MONTHLY_TEMP_PATH):
+            self.wb_month = openpyxl.load_workbook(config.MONTHLY_TEMP_PATH)
+        else:
+            self.wb_month = openpyxl.load_workbook(config.MONTHLY_PATH)
+
+        # Load Worksheets (ws)
+        self.ws_ebawe = self.wb_ebawe.active
+        self.ws_daily = self.wb_daily[f"E{ebawe}"]
+        self.ws_yearly = self.wb_pow_do_raportu.active
+        self.ws_monthly = self.wb_month[f"E{ebawe}"]
+        # Row 1 variables
+        self.row_1_yearly = self.ws_yearly[1]
+        self.row_1_monthly = self.ws_monthly[1]
+        # Number of rows in sheets
+        self.ebawe_max_row = self.ws_ebawe.max_row
+        self.yearly_max_row = self.ws_yearly.max_row
+        self.yearly_max_col = self.ws_yearly.max_column
+
+        # Columns names
+        self.title_tuple = ("Element", "Typ", "Powierzchnia", "Klasa betonu", "Gatunek stali")
+        self.title_index = (3, 4, 6, 7, 9)
+
+        # List of projects
+        self.ebawe_project_list = list()
+
+    def fill_ebawe_project_list(self):
+        """ Fill in data in self.ebawe_project_list according to the schema below
+        self.ebawe_project_list = [[proj_number, row_index_from_ebawe_raport, number_of elements], [...], ...]
+        :return:
+        """
+        proj_counter = 0
+        for row_index in range(1, self.ebawe_max_row):
+            if self.ws_ebawe.cell(column=5, row=row_index).value is not None:
+                self.ebawe_project_list.append([self.ws_ebawe.cell(column=5, row=row_index).value, row_index])
+                if proj_counter != 0:  # intentional omission of the loop operation in the first iteration
+                    self.ebawe_project_list[proj_counter - 1].append(
+                        self.ebawe_project_list[proj_counter][1] - self.ebawe_project_list[proj_counter - 1][1] - 6
+                    )
+                proj_counter += 1
+        row_of_last_proj = self.ebawe_project_list[-1][1]
+        number_of_elements_in_last_proj = 0
+        while True:
+            if self.ws_ebawe.cell(column=3, row=row_of_last_proj + number_of_elements_in_last_proj + 3).value is None:
+                break
+            number_of_elements_in_last_proj += 1
+        self.ebawe_project_list[-1].append(number_of_elements_in_last_proj)
+
+        # Making a daily report - copy from E1 report to daily report
+    def create_daily_report(self):
+        """ Making a daily report - copy data from ebawe report to daily report,
+        but area of elements are taken from yearly report. Also formatting daily report.
+        :return:
+        """
+        # Heading
+        self.ws_daily['H8'] = f"{dd}.{mm}.{yyyy}"
+        self.ws_daily['H10'] = f"E{ebawe}"
+
+        # Reducing row height
+        small_rows = (4, 5, 6, 7, 9, 11)
+        for row in small_rows:
+            self.ws_daily.row_dimensions[row].height = 1
+
+        # For loop for every project in self.ebawe_project_list
+        for proj in self.ebawe_project_list:
+            # Project headers ("Zlecenie")
+            self.ws_daily.cell(row=proj[1], column=1).value = "Zlecenie:"
+            self.ws_daily.cell(row=proj[1], column=5).value = proj[0]
+            self.ws_daily.cell(row=proj[1], column=1).font = font_bold
+            self.ws_daily.cell(row=proj[1], column=5).font = font_bold
+            for row in self.ws_daily.iter_rows(min_row=proj[1], max_row=proj[1], min_col=1, max_col=9):
+                for cell in row:
+                    cell.fill = grey_fill
+            # Row height reduction
+            self.ws_daily.row_dimensions[proj[1] + 1].height = 4
+            self.ws_daily.row_dimensions[proj[1] + proj[2] + 3].height = 4
+            # Columns titles
+            col_number = 0
+            for title in self.title_tuple:
+                self.ws_daily.cell(row=proj[1] + 2, column=self.title_index[col_number]).value = title
+                col_number += 1
+            for row in self.ws_daily.iter_rows(min_row=proj[1] + 2, max_row=proj[1] + 2, min_col=1, max_col=9):
+                for cell in row:
+                    cell.fill = title_fill
+            # Sum of elements
+            self.ws_daily.cell(row=proj[1] + proj[2] + 4, column=3).value = proj[2]
+            self.ws_daily.cell(row=proj[1] + proj[2] + 4, column=3).border = thick_border
+            self.ws_daily.cell(row=proj[1] + proj[2] + 4, column=3).fill = summary_fill
+            # Finding proper column index in "yearly report"
+            for cell in self.row_1_yearly:
+                if cell.value == proj[0]:
+                    col_index_in_yearly = cell.column
             try:
-                num = int(sheet_E1.cell(row=i[1]+y+3, column=3).value)
-            except:
-                war = "Nr elementu:  " + str(sheet_E1.cell(row=i[1]+y+3, column=3).value) + "\nz projektu:  " + str(i[0])\
-                      + """\n\nnie jest liczbą.
-    Skrypt zamknie się bez zapisywania żadnych zmian.
-    Sprawdź numery elementów i uruchom skrypt ponownie."""
-                warning_msg_box(war)
-            sheet_daily_E1.cell(row=i[1]+y+3, column=3).value = sheet_E1.cell(row=i[1]+y+3, column=3).value
-            sheet_daily_E1.cell(row=i[1]+y+3, column=3).border = border
-            sheet_daily_E1.cell(row=i[1]+y+3, column=4).value = sheet_E1.cell(row=i[1]+y+3, column=4).value
-            sheet_daily_E1.cell(row=i[1]+y+3, column=4).border = border
-            sheet_daily_E1.cell(row=i[1]+y+3, column=5).border = border
-            sheet_daily_E1.cell(row=i[1]+y+3, column=7).value = sheet_E1.cell(row=i[1]+y+3, column=9).value
-            sheet_daily_E1.cell(row=i[1]+y+3, column=7).border = border
-            sheet_daily_E1.cell(row=i[1]+y+3, column=8).border = border
-            sheet_daily_E1.cell(row=i[1]+y+3, column=9).value = sheet_E1.cell(row=i[1]+y+3, column=11).value
-            sheet_daily_E1.cell(row=i[1]+y+3, column=9).border = border
-            sheet_daily_E1.cell(row=i[1]+y+3, column=6).border = border
-            if sheet_pow_do_raportu.cell(row=num+8, column=jj).value is not None:
-                test_color1 = str(sheet_pow_do_raportu.cell(row=num + 8, column=jj).fill.start_color.index)
-                if test_color1[-6:] != 'FFFF00':
-                    sheet_daily_E1.cell(row=i[1]+y+3, column=6).value = sheet_pow_do_raportu.cell(row=num+8, column=jj).value
-                    sheet_pow_do_raportu.cell(row=num+8, column=jj).fill = yellow_fill
+                col_index_in_yearly += 0
+            except NameError:
+                warn = f"Nie znaleziono odpowiedniego projektu\nw Excelu z powierzchniami brutto.\n\n{proj[0]}\n\n" \
+                       f"Skrypt zamknie się bez zapisywania żadnych zmian.\n\n" \
+                       f"Sprawdź, czy numery projektów są identyczne\nwe wszystkich wejściowych arkuszach excel\n" \
+                       f"i uruchom skrypt ponownie."
+                warning_msg_box(warn)
+            # Project description
+            description = self.ws_yearly.cell(row=2, column=col_index_in_yearly).value.replace("\n", " - ")
+            self.ws_daily.cell(row=proj[1], column=10).value = description
+            proj.append(description)
+            # Main data table
+            # While loop for every prefab element in the project
+            el = 0  # el - element counter in each project
+            while el < proj[2]:
+                area_found = 0
+                try:
+                    num = int(self.ws_ebawe.cell(row=proj[1]+el+3, column=3).value)
+                except ValueError:
+                    war = f"Nr elementu:  {self.ws_ebawe.cell(row=proj[1]+el+3, column=3).value}\nz projektu:  " \
+                          f"{proj[0]}\n\nnie jest liczbą.\nSkrypt zamknie się bez zapisywania żadnych zmian.\n" \
+                          f"Sprawdź numery elementów i uruchom skrypt ponownie."
+                    warning_msg_box(war)
+                self.ws_daily.cell(row=proj[1]+el+3, column=3).value = self.ws_ebawe.cell(
+                    row=proj[1]+el+3, column=3).value
+                self.ws_daily.cell(row=proj[1]+el+3, column=3).border = border
+                self.ws_daily.cell(row=proj[1]+el+3, column=4).value = self.ws_ebawe.cell(
+                    row=proj[1]+el+3, column=4).value
+                self.ws_daily.cell(row=proj[1]+el+3, column=4).border = border
+                self.ws_daily.cell(row=proj[1]+el+3, column=5).border = border
+                self.ws_daily.cell(row=proj[1]+el+3, column=7).value = self.ws_ebawe.cell(
+                    row=proj[1]+el+3, column=9).value
+                self.ws_daily.cell(row=proj[1]+el+3, column=7).border = border
+                self.ws_daily.cell(row=proj[1]+el+3, column=8).border = border
+                self.ws_daily.cell(row=proj[1]+el+3, column=9).value = self.ws_ebawe.cell(
+                    row=proj[1]+el+3, column=11).value
+                self.ws_daily.cell(row=proj[1]+el+3, column=9).border = border
+                self.ws_daily.cell(row=proj[1]+el+3, column=6).border = border
+                if self.ws_yearly.cell(row=num + 8, column=col_index_in_yearly).value is not None:
+                    test_color = str(self.ws_yearly.cell(row=num+8, column=col_index_in_yearly).fill.start_color.index)
+                    if test_color[-6:] != 'FFFF00':
+                        self.ws_daily.cell(row=proj[1]+el+3, column=6).value = self.ws_yearly.cell(
+                            row=num+8, column=self.col_index_in_yearly).value
+                        self.ws_yearly.cell(row=num+8, column=col_index_in_yearly).fill = yellow_fill
+                    else:
+                        warn = f"Próbujesz wpisać do raportów płytę,\nktóra już wcześniej była zaraportowana:\n\n" \
+                              f"Projekt:  {proj[0]}\nNumer elementu:  {num}\n\n" \
+                              f"Skrypt zamknie się bez zapisywania żadnych zmian.\n" \
+                              f"Zweryfikuj błąd i uruchom skrypt ponownie."
+                        warning_msg_box(warn)
                 else:
-                    war = "Próbujesz wpisać do raportów płytę,\nktóra już wcześniej była zaraportowana:\n\nProjekt:  "\
-                          + str(i[0]) + "\nNumer elementu:  " + str(num)\
-                          + """\n\nSkrypt zamknie się bez zapisywania żadnych zmian.
-    
-    Zweryfikuj błąd i uruchom skrypt ponownie."""
-                    warning_msg_box(war)
-            else:
-                # Looking for the area in the next 10 columns on the right
-                for index_increase in range(1, 10):
-                    if sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).value is not None:
-                        test_color2 = str(sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).fill.start_color.index)
-                        if test_color2[-6:] != 'FFFF00':
-                            sheet_daily_E1.cell(row=i[1]+y+3, column=6).value = sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).value
-                            sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).fill = yellow_fill
-                            sheet_daily_E1.cell(row=i[1]+y+3, column=11).value = sheet_pow_do_raportu.cell(row=num+8, column=jj+index_increase).value
-                            sheet_daily_E1.cell(row=i[1]+y+3, column=10).value = sheet_pow_do_raportu.cell(row=5, column=jj+index_increase).value
-                            sheet_daily_E1.cell(row=i[1]+y+3, column=10).fill = pink_fill
-                            sheet_daily_E1.cell(row=i[1]+y+3, column=11).fill = pink_fill
-                            area_found = 1
-                            break
-                        else:
-                            war = "Próbujesz wpisać do raportów płytę,\nktóra już wcześniej była zaraportowana:\n\nProjekt:  "\
-                                  + str(i[0]) + "\nNumer elementu:  " + str(num)\
-                                  + """\n\nSkrypt zamknie się bez zapisywania żadnych zmian.
-    
-    Zweryfikuj błąd i uruchom skrypt ponownie."""
-                            warning_msg_box(war)
-                if area_found != 1:
-                    war = "Nie można pobrać powierzchni\nelementu nr:  " + str(num) + "\nz projektu:  " + str(i[0])\
-                          + """\n\nSkrypt zamknie się bez zapisywania żadnych zmian.
-    
-    Sprawdź poprawność numeru tego elementu\ni uruchom skrypt ponownie."""
-                    warning_msg_box(war)
-            y += 1
-        # Creating a sum formula
-        sum_list = []
-        for element in range(0, i[2]):
-            sum_list.append(i[1]+3+element)
-        formula = "=0"
-        for row_index_to_sum in sum_list:
-            formula += "+F" + str(row_index_to_sum)
-        sheet_daily_E1.cell(row=i[1]+i[2]+4, column=6).value = formula
-        sheet_daily_E1.cell(row=i[1]+i[2]+4, column=6).fill = summary_fill
-        sheet_daily_E1.cell(row=i[1]+i[2]+4, column=6).border = border2
-        # Formula below looks better, but doesn't work ("apparent intersection error")
-        # sheet_daily_E1.cell(row=i[1]+i[2]+4, column=6).value = "=SUMA(F" + str(i[1]+3) + ":F" + str(i[1]+i[2]+2) + ")"
+                    # Looking for the area in the next 10 columns on the right
+                    for index_increase in range(1, 10):
+                        if self.ws_yearly.cell(row=num+8, column=col_index_in_yearly+index_increase).value is not None:
+                            test_color2 = str(self.ws_yearly.cell(
+                                row=num+8, column=col_index_in_yearly+index_increase).fill.start_color.index)
+                            if test_color2[-6:] != 'FFFF00':
+                                self.ws_daily.cell(row=proj[1]+el+3, column=6).value = self.ws_yearly.cell(
+                                    row=num+8, column=col_index_in_yearly+index_increase).value
+                                self.ws_yearly.cell(
+                                    row=num + 8, column=col_index_in_yearly + index_increase).fill = yellow_fill
+                                self.ws_daily.cell(row=proj[1]+el+3, column=11).value = self.ws_yearly.cell(
+                                    row=num+8, column=col_index_in_yearly+index_increase).value
+                                self.ws_daily.cell(row=proj[1]+el+3, column=10).value = self.ws_yearly.cell(
+                                    row=5, column=col_index_in_yearly+index_increase).value
+                                self.ws_daily.cell(row=proj[1]+el+3, column=10).fill = pink_fill
+                                self.ws_daily.cell(row=proj[1]+el+3, column=11).fill = pink_fill
+                                area_found = 1
+                                break
+                            else:
+                                warn = f"Próbujesz wpisać do raportów płytę,\nktóra już wcześniej była zaraportowana:" \
+                                       f"\n\nProjekt:  {proj[0]}\nNumer elementu:  {num}\n\n" \
+                                       f"Skrypt zamknie się bez zapisywania żadnych zmian.\n" \
+                                       f"Zweryfikuj błąd i uruchom skrypt ponownie."
+                                warning_msg_box(warn)
+                    if area_found != 1:
+                        warn = f"Nie można pobrać powierzchni\nelementu nr:  {num}\nz projektu:  {proj[0]}\n\n" \
+                               f"Skrypt zamknie się bez zapisywania żadnych zmian.\n" \
+                               f"Sprawdź poprawność numeru tego elementu\ni uruchom skrypt ponownie."
+                        warning_msg_box(warn)
+                el += 1
+            # Creating a sum formula
+            sum_list = []  # init list of row indexes with cells which need to be sum
+            for element in range(0, proj[2]):
+                sum_list.append(proj[1]+3+element)
+            formula = "=0"
+            for row_index_to_sum in sum_list:
+                formula += f"+F{row_index_to_sum}"
+            self.ws_daily.cell(row=proj[1]+proj[2]+4, column=6).value = formula
+            self.ws_daily.cell(row=proj[1]+proj[2]+4, column=6).fill = summary_fill
+            self.ws_daily.cell(row=proj[1]+proj[2]+4, column=6).border = thick_border
 
-        # Additional Sums
-        add_sum_dict = {}
-        # For loop for initializing keys
-        for col in sheet_daily_E1.iter_cols(min_col=10, max_col=10, min_row=i[1]+3, max_row=i[1]+i[2]+2):
-            for cell in col:
-                if cell.value is not None:
-                    add_sum_dict[cell.value] = 0
-        # For loop for set values to keys
-        for col in sheet_daily_E1.iter_cols(min_col=10, max_col=10, min_row=i[1]+3, max_row=i[1]+i[2]+2):
-            for cell in col:
-                if cell.value is not None:
-                    add_sum_dict[cell.value] += sheet_daily_E1.cell(row=cell.row, column=cell.column+1).value
-        i.append(add_sum_dict)
-        for key in add_sum_dict.keys():
-            additional_sums_written = 0
-            for col in sheet_daily_E1.iter_cols(min_col=10, max_col=10, min_row=i[1]+3, max_row=i[1]+i[2]+2):
+            # Additional Sums
+            add_sum_dict = {}
+            # For loop for initializing keys
+            for col in self.ws_daily.iter_cols(min_col=10, max_col=10, min_row=proj[1]+3, max_row=proj[1]+proj[2]+2):
                 for cell in col:
-                    if cell.value == key and additional_sums_written == 0:
-                        sheet_daily_E1.cell(row=cell.row, column=cell.column+2).value = add_sum_dict[key]
-                        sheet_daily_E1.cell(row=cell.row, column=cell.column+2).fill = summary_fill
-                        sheet_daily_E1.cell(row=cell.row, column=cell.column).fill = summary_fill
-                        additional_sums_written = 1
-
-    # Heading
-    sheet_daily_E1['H8'] = dd + "." + mm + "." + yyyy
-    sheet_daily_E1['H10'] = "E" + str(ebawe)
-
-    # Reducing row height
-    small_rows = (4, 5, 6, 7, 9, 11)
-    for i in small_rows:
-        sheet_daily_E1.row_dimensions[i].height = 1
+                    if cell.value is not None:
+                        add_sum_dict[cell.value] = 0
+            # For loop for set values to keys
+            for col in self.ws_daily.iter_cols(min_col=10, max_col=10, min_row=proj[1]+3, max_row=proj[1]+proj[2]+2):
+                for cell in col:
+                    if cell.value is not None:
+                        add_sum_dict[cell.value] += self.ws_daily.cell(row=cell.row, column=cell.column+1).value
+            proj.append(add_sum_dict)
+            for key in add_sum_dict.keys():
+                additional_sums_written = 0
+                for col in self.ws_daily.iter_cols(
+                        min_col=10, max_col=10, min_row=proj[1]+3, max_row=proj[1]+proj[2]+2):
+                    for cell in col:
+                        if cell.value == key and additional_sums_written == 0:
+                            self.ws_daily.cell(row=cell.row, column=cell.column+2).value = add_sum_dict[key]
+                            self.ws_daily.cell(row=cell.row, column=cell.column+2).fill = summary_fill
+                            self.ws_daily.cell(row=cell.row, column=cell.column).fill = summary_fill
+                            additional_sums_written = 1
 
 
     # Painting green "pow_do_raportu"
-    for col in sheet_pow_do_raportu.iter_cols(min_row=9, min_col=2, max_col=pow_do_raportu_max_col, max_row=pow_do_raportu_max_row):
+    for col in ws_yearly.iter_cols(min_row=9, min_col=2, max_col=yearly_max_col, max_row=yearly_max_row):
         proj_done = 0
         for cell in col:
             if cell.value is not None:
@@ -366,47 +363,47 @@ def create_report():
                 proj_done = 0
                 break
         if proj_done == 1:
-            sheet_pow_do_raportu.cell(row=4, column=col[4].column).fill = green_fill
-            sheet_pow_do_raportu.cell(row=5, column=col[5].column).fill = green_fill
-    for proj in project_E1_list:
+            ws_yearly.cell(row=4, column=col[4].column).fill = green_fill
+            ws_yearly.cell(row=5, column=col[5].column).fill = green_fill
+    for proj in ebawe_project_list:
         stop_painting = 0
-        for proj2 in row_1_pow_do_raportu:
+        for proj2 in row_1_yearly:
             if proj[0] == proj2.value:
                 list_of_proj_to_paint = [proj2]
                 proj2_col = proj2.column
                 for u in range(1, 11):
-                    if sheet_pow_do_raportu.cell(row=1, column=proj2_col+u).value is None:
-                        list_of_proj_to_paint.append(sheet_pow_do_raportu.cell(row=1, column=proj2_col+u))
+                    if ws_yearly.cell(row=1, column=proj2_col + u).value is None:
+                        list_of_proj_to_paint.append(ws_yearly.cell(row=1, column=proj2_col + u))
                     else:
                         break
                 len_to_paint = len(list_of_proj_to_paint)
                 paint_or_not = 1
                 for u in range(0, len_to_paint):
-                    test_color4 = str(sheet_pow_do_raportu.cell(row=4, column=list_of_proj_to_paint[u].column).fill.start_color.index)
+                    test_color4 = str(ws_yearly.cell(row=4, column=list_of_proj_to_paint[u].column).fill.start_color.index)
                     if test_color4[-6:] != '548235':
                         paint_or_not = 0
                         break
                 if paint_or_not == 1:
-                    for proj3 in row_1_month_E1:
+                    for proj3 in row_1_monthly:
                         if proj[0] == proj3.value:
                             proj3_col = proj3.column
                     for u in range(0, len_to_paint):
-                        sheet_pow_do_raportu.cell(row=1, column=proj2_col+u).fill = green_fill
-                        sheet_pow_do_raportu.cell(row=2, column=proj2_col+u).fill = green_fill
-                        sheet_pow_do_raportu.cell(row=3, column=proj2_col+u).fill = green_fill
+                        ws_yearly.cell(row=1, column=proj2_col + u).fill = green_fill
+                        ws_yearly.cell(row=2, column=proj2_col + u).fill = green_fill
+                        ws_yearly.cell(row=3, column=proj2_col + u).fill = green_fill
                         # Painting yellow "month report"
                         try:
                             if u == 0:
-                                sheet_month_E1.cell(row=1, column=proj3_col).fill = yellow_fill
-                                sheet_month_E1.cell(row=2, column=proj3_col).fill = yellow_fill
-                                sheet_month_E1.cell(row=3, column=proj3_col).fill = yellow_fill
-                                sheet_month_E1.cell(row=4, column=proj3_col).fill = yellow_fill
+                                ws_monthly.cell(row=1, column=proj3_col).fill = yellow_fill
+                                ws_monthly.cell(row=2, column=proj3_col).fill = yellow_fill
+                                ws_monthly.cell(row=3, column=proj3_col).fill = yellow_fill
+                                ws_monthly.cell(row=4, column=proj3_col).fill = yellow_fill
                             else:
-                                if sheet_month_E1.cell(row=1, column=proj3_col+u).value is not None or sheet_month_E1.cell(row=2, column=proj3_col+u).value is None:
+                                if ws_monthly.cell(row=1, column=proj3_col + u).value is not None or ws_monthly.cell(row=2, column=proj3_col + u).value is None:
                                     stop_painting += 1
                                 if stop_painting == 0:
-                                    sheet_month_E1.cell(row=2, column=proj3_col+u).fill = yellow_fill
-                                    sheet_month_E1.cell(row=3, column=proj3_col+u).fill = yellow_fill
+                                    ws_monthly.cell(row=2, column=proj3_col + u).fill = yellow_fill
+                                    ws_monthly.cell(row=3, column=proj3_col + u).fill = yellow_fill
                         except NameError:
                             war = "Nie znaleziono odpowiedniego projektu\nw Excelu z miesięcznym raportem:\n\n" + str(
                                 proj[0]) + """\n\nSkrypt zamknie się bez zapisywania żadnych zmian.
@@ -419,15 +416,13 @@ def create_report():
     # Saving temporary file
     if safe_to_save == 1:
         wb_daily.save("C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
-        # wb_pow_do_raportu.save("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + "_GR.xlsx")
 
     # Filling month report and ExcelCompiler stuff
-    # sheet_month_E1.insert_cols(15) - NIE UŻYWAĆ, BO PSUJE CAŁĄ TABELE EXCELA !!!
     excel = ExcelCompiler(filename="C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
-    for i in project_E1_list:
+    for i in ebawe_project_list:
         col_index = "test"
         proj = i[0]
-        for cell in row_1_month_E1:
+        for cell in row_1_monthly:
             if cell.value == proj:
                 col_index = cell.column
         try:
@@ -447,25 +442,25 @@ def create_report():
         for dict_value in i[4].values():
             evaluated_value -= dict_value
         # writing "evaluated value" in daily report
-        for cell in row_1_pow_do_raportu:
+        for cell in row_1_yearly:
             if cell.value == proj:
                 col_index2 = cell.column
         if evaluated_value > 0.02:
-            sheet_daily_E1.cell(row=row_index_to_evaluate, column=10).value = sheet_pow_do_raportu.cell(row=5, column=col_index2).value
-            sheet_daily_E1.cell(row=row_index_to_evaluate, column=11).value = evaluated_value
-            sheet_daily_E1.cell(row=row_index_to_evaluate, column=10).fill = summary_fill
-            sheet_daily_E1.cell(row=row_index_to_evaluate, column=11).fill = summary_fill
-            sheet_daily_E1.cell(row=row_index_to_evaluate, column=10).border = border
-            sheet_daily_E1.cell(row=row_index_to_evaluate, column=11).border = border
+            ws_daily.cell(row=row_index_to_evaluate, column=10).value = ws_yearly.cell(row=5, column=col_index2).value
+            ws_daily.cell(row=row_index_to_evaluate, column=11).value = evaluated_value
+            ws_daily.cell(row=row_index_to_evaluate, column=10).fill = summary_fill
+            ws_daily.cell(row=row_index_to_evaluate, column=11).fill = summary_fill
+            ws_daily.cell(row=row_index_to_evaluate, column=10).border = border
+            ws_daily.cell(row=row_index_to_evaluate, column=11).border = border
             # adding "evaluated value" to the dictionary
-            i[4][sheet_pow_do_raportu.cell(row=5, column=col_index2).value] = evaluated_value
+            i[4][ws_yearly.cell(row=5, column=col_index2).value] = evaluated_value
         # actual completion of the monthly report
         for key in i[4].keys():
             for product in range(0, 10):
-                if key == sheet_month_E1.cell(row=2, column=col_index + product).value and (
-                        sheet_month_E1.cell(row=1, column=col_index + product).value == i[0] or sheet_month_E1.cell(
+                if key == ws_monthly.cell(row=2, column=col_index + product).value and (
+                        ws_monthly.cell(row=1, column=col_index + product).value == i[0] or ws_monthly.cell(
                         row=1, column=col_index + product).value is None):
-                    sheet_month_E1.cell(row=int(dd) + 5, column=col_index + product).value = i[4][key]
+                    ws_monthly.cell(row=int(dd) + 5, column=col_index + product).value = i[4][key]
                     break
 
     # Saving all report files
@@ -482,7 +477,6 @@ def create_report():
 
 if __name__ == "__main__":
     welcome_message_box()
-
     if dd == "" or mm == "" or yyyy == "" or ebawe == "":
         warning_msg = "Nie podano wszystkich danych w oknie startowym!\nKończę skrypt."
         warning_msg_box(warning_msg)
@@ -490,7 +484,8 @@ if __name__ == "__main__":
         warning_msg = "Wszystkie dane w oknie startowym muszą być numeryczne!\nKończę skrypt."
         warning_msg_box(warning_msg)
 
-    config = Config(dd="09", mm="08", yyyy="2024", ebawe="1")
+    config_obj = Config(dd="09", mm="08", yyyy="2024", ebawe="1")
+    print(type(config_obj))
 
-    # create_report()
+    create_report(config=config_obj)
 

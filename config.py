@@ -17,3 +17,4 @@ class Config:
         self.MONTHLY_TEMP_PATH = Path(os.environ.get('MONTHLY_PATH').format(MM=mm, YYYY=yyyy, TEMP="_TEMP"))
         self.YEARLY_PATH = Path(os.environ.get('YEARLY_PATH').format(YYYY=yyyy, TEMP=""))
         self.YEARLY_TEMP_PATH = Path(os.environ.get('YEARLY_PATH').format(YYYY=yyyy, TEMP="_TEMP"))
+        self.TEMPORARY_FILE = Path(os.environ.get('TEMPORARY_FILE').format(DD=dd, MM=mm, YYYY=yyyy))
