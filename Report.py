@@ -5,6 +5,12 @@ import openpyxl
 from openpyxl.styles import PatternFill, Border, Side, Font
 from pycel import ExcelCompiler
 
+from config import Config
+
+config = Config(dd="09", mm="08", yyyy="2024", ebawe="1")
+print(config.EBAWE_REPORT_PATH)
+print(type(config.EBAWE_REPORT_PATH))
+
 
 # Adjusting style
 # colors
