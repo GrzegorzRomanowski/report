@@ -18,3 +18,21 @@ class Config:
         self.YEARLY_PATH = Path(os.environ.get('YEARLY_PATH').format(YYYY=yyyy, TEMP=""))
         self.YEARLY_TEMP_PATH = Path(os.environ.get('YEARLY_PATH').format(YYYY=yyyy, TEMP="_TEMP"))
         self.TEMPORARY_FILE = Path(os.environ.get('TEMPORARY_FILE').format(DD=dd, MM=mm, YYYY=yyyy))
+
+
+class TestConfig(Config):
+    TEMPLATE_PATH = Path('test_data/Szablon.xlsx')
+    EBAWE_REPORT_PATH = Path('test_data/')
+    DAILY_PATH = Path('test_data/')
+    DAILY_TEMP_PATH = Path('test_data/')
+    MONTHLY_PATH = Path('test_data/')
+    MONTHLY_TEMP_PATH = Path('test_data/')
+    YEARLY_PATH = Path('test_data/')
+    YEARLY_TEMP_PATH = Path('test_data/')
+    TEMPORARY_FILE = Path('test_data/')
+
+
+config_env = {
+    'production': Config,
+    'testing': TestConfig
+}

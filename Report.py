@@ -5,7 +5,7 @@ import openpyxl
 from openpyxl.styles import PatternFill, Border, Side, Font
 from pycel import ExcelCompiler
 
-from config import Config
+from config import config_env, Config
 
 
 # region Initialization
@@ -27,7 +27,7 @@ thick_border = Border(top=thick_edge, bottom=thick_edge, left=thick_edge, right=
 font_bold = Font(bold=True)
 
 
-# Hardcoded data and variables
+# Init global variables
 dd = str()
 mm = str()
 yyyy = str()
@@ -38,7 +38,7 @@ safe_to_save = 1
 
 
 # region Interface
-def welcome_message_box():
+def report_welcome_message_box():
     """ Tkinter welcome window that asks for the date and number of the production line to be reported.
     :return:
     """
@@ -78,11 +78,11 @@ def welcome_message_box():
         yyyy = ask_year.get()
         ebawe = ask_ebawe.get()
         if dd == "" or mm == "" or yyyy == "" or ebawe == "":
-            warning_msg = "Nie podano wszystkich danych w oknie startowym!"
-            warning_msg_box(warning_msg, end=False)
+            warning_msg1 = "Nie podano wszystkich danych w oknie startowym!"
+            warning_msg_box(warning_msg1, end=False)
         elif not dd.isnumeric() or not mm.isnumeric() or not yyyy.isnumeric():
-            warning_msg = "Wszystkie dane w oknie startowym muszą być numeryczne!"
-            warning_msg_box(warning_msg, end=False)
+            warning_msg2 = "Wszystkie dane w oknie startowym muszą być numeryczne!"
+            warning_msg_box(warning_msg2, end=False)
         else:
             ask_window.destroy()
 
@@ -108,9 +108,9 @@ def warning_msg_box(msg: str, end: bool = True):
 
     def warning_button(end_button: bool = end):
         global safe_to_save
-        safe_to_save = 0
         warning_window.destroy()
         if end_button:
+            safe_to_save = 0
             sys.exit()
     warning_button = tk.Button(warning_window, text="OK", command=warning_button, width=25, height=2)
     warning_button.pack(pady=10, padx=15)
@@ -123,6 +123,7 @@ def warning_msg_box(msg: str, end: bool = True):
 # region Transform data
 class Report:
     def __init__(self, config: Config):
+        self.config = config
         # Load Workbooks (wb)
         try:
             self.wb_ebawe = openpyxl.load_workbook(config.EBAWE_REPORT_PATH)
@@ -137,9 +138,9 @@ class Report:
             self.wb_daily = openpyxl.load_workbook(config.TEMPLATE_PATH)
 
         if os.path.isfile(config.YEARLY_TEMP_PATH):
-            self.wb_pow_do_raportu = openpyxl.load_workbook(config.YEARLY_TEMP_PATH)
+            self.wb_yearly = openpyxl.load_workbook(config.YEARLY_TEMP_PATH)
         else:
-            self.wb_pow_do_raportu = openpyxl.load_workbook(config.YEARLY_PATH)
+            self.wb_yearly = openpyxl.load_workbook(config.YEARLY_PATH)
 
         if os.path.isfile(config.MONTHLY_TEMP_PATH):
             self.wb_month = openpyxl.load_workbook(config.MONTHLY_TEMP_PATH)
@@ -149,7 +150,7 @@ class Report:
         # Load Worksheets (ws)
         self.ws_ebawe = self.wb_ebawe.active
         self.ws_daily = self.wb_daily[f"E{ebawe}"]
-        self.ws_yearly = self.wb_pow_do_raportu.active
+        self.ws_yearly = self.wb_yearly.active
         self.ws_monthly = self.wb_month[f"E{ebawe}"]
         # Row 1 variables
         self.row_1_yearly = self.ws_yearly[1]
@@ -165,6 +166,13 @@ class Report:
 
         # List of projects
         self.ebawe_project_list = list()
+
+    def __call__(self):
+        self.fill_ebawe_project_list()
+        self.create_daily_report()
+        self.painting_monthly_and_yearly_reports()
+        self.filling_monthly_report()
+        self.saving_all_reports_files()
 
     def fill_ebawe_project_list(self):
         """ Fill in data in self.ebawe_project_list according to the schema below
@@ -188,7 +196,6 @@ class Report:
             number_of_elements_in_last_proj += 1
         self.ebawe_project_list[-1].append(number_of_elements_in_last_proj)
 
-        # Making a daily report - copy from E1 report to daily report
     def create_daily_report(self):
         """ Making a daily report - copy data from ebawe report to daily report,
         but area of elements are taken from yearly report. Also formatting daily report.
@@ -275,7 +282,7 @@ class Report:
                     test_color = str(self.ws_yearly.cell(row=num+8, column=col_index_in_yearly).fill.start_color.index)
                     if test_color[-6:] != 'FFFF00':
                         self.ws_daily.cell(row=proj[1]+el+3, column=6).value = self.ws_yearly.cell(
-                            row=num+8, column=self.col_index_in_yearly).value
+                            row=num+8, column=col_index_in_yearly).value
                         self.ws_yearly.cell(row=num+8, column=col_index_in_yearly).fill = yellow_fill
                     else:
                         warn = f"Próbujesz wpisać do raportów płytę,\nktóra już wcześniej była zaraportowana:\n\n" \
@@ -349,134 +356,152 @@ class Report:
                             self.ws_daily.cell(row=cell.row, column=cell.column).fill = summary_fill
                             additional_sums_written = 1
 
-
-    # Painting green "pow_do_raportu"
-    for col in ws_yearly.iter_cols(min_row=9, min_col=2, max_col=yearly_max_col, max_row=yearly_max_row):
-        proj_done = 0
-        for cell in col:
-            if cell.value is not None:
-                proj_done = 1
-                break
-        for cell in col:
-            test_color3 = str(cell.fill.start_color.index)
-            if cell.value is not None and test_color3[-6:] != 'FFFF00':
-                proj_done = 0
-                break
-        if proj_done == 1:
-            ws_yearly.cell(row=4, column=col[4].column).fill = green_fill
-            ws_yearly.cell(row=5, column=col[5].column).fill = green_fill
-    for proj in ebawe_project_list:
-        stop_painting = 0
-        for proj2 in row_1_yearly:
-            if proj[0] == proj2.value:
-                list_of_proj_to_paint = [proj2]
-                proj2_col = proj2.column
-                for u in range(1, 11):
-                    if ws_yearly.cell(row=1, column=proj2_col + u).value is None:
-                        list_of_proj_to_paint.append(ws_yearly.cell(row=1, column=proj2_col + u))
-                    else:
-                        break
-                len_to_paint = len(list_of_proj_to_paint)
-                paint_or_not = 1
-                for u in range(0, len_to_paint):
-                    test_color4 = str(ws_yearly.cell(row=4, column=list_of_proj_to_paint[u].column).fill.start_color.index)
-                    if test_color4[-6:] != '548235':
-                        paint_or_not = 0
-                        break
-                if paint_or_not == 1:
-                    for proj3 in row_1_monthly:
-                        if proj[0] == proj3.value:
-                            proj3_col = proj3.column
-                    for u in range(0, len_to_paint):
-                        ws_yearly.cell(row=1, column=proj2_col + u).fill = green_fill
-                        ws_yearly.cell(row=2, column=proj2_col + u).fill = green_fill
-                        ws_yearly.cell(row=3, column=proj2_col + u).fill = green_fill
-                        # Painting yellow "month report"
-                        try:
-                            if u == 0:
-                                ws_monthly.cell(row=1, column=proj3_col).fill = yellow_fill
-                                ws_monthly.cell(row=2, column=proj3_col).fill = yellow_fill
-                                ws_monthly.cell(row=3, column=proj3_col).fill = yellow_fill
-                                ws_monthly.cell(row=4, column=proj3_col).fill = yellow_fill
-                            else:
-                                if ws_monthly.cell(row=1, column=proj3_col + u).value is not None or ws_monthly.cell(row=2, column=proj3_col + u).value is None:
-                                    stop_painting += 1
-                                if stop_painting == 0:
-                                    ws_monthly.cell(row=2, column=proj3_col + u).fill = yellow_fill
-                                    ws_monthly.cell(row=3, column=proj3_col + u).fill = yellow_fill
-                        except NameError:
-                            war = "Nie znaleziono odpowiedniego projektu\nw Excelu z miesięcznym raportem:\n\n" + str(
-                                proj[0]) + """\n\nSkrypt zamknie się bez zapisywania żadnych zmian.
-    
-    Sprawdź, czy projekt znajduje się w tabeli
-    z miesięcznym raportem i czy jest poprawnie wpisany.
-    Nastepnie uruchom skrypt ponownie."""
-                            warning_msg_box(war)
-
-    # Saving temporary file
-    if safe_to_save == 1:
-        wb_daily.save("C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
-
-    # Filling month report and ExcelCompiler stuff
-    excel = ExcelCompiler(filename="C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
-    for i in ebawe_project_list:
-        col_index = "test"
-        proj = i[0]
-        for cell in row_1_monthly:
-            if cell.value == proj:
-                col_index = cell.column
-        try:
-            col_index += 0
-        except (NameError, TypeError):
-            os.remove("C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
-            war = "Nie znaleziono odpowiedniego projektu\nw Excelu z miesięcznym raportem:\n\n" + str(proj)\
-                  + """\n\nSkrypt zamknie się bez zapisywania żadnych zmian.
-    
-    Sprawdź, czy projekt znajduje się w tabeli
-    z miesięcznym raportem i czy jest poprawnie wpisany.
-    Nastepnie uruchom skrypt ponownie."""
-            warning_msg_box(war)
-        row_index_to_evaluate = i[1]+i[2]+4
-        evaluated_value = excel.evaluate('E' + str(ebawe) + '!F' + str(row_index_to_evaluate))
-        # subtracting from the "evaluated value" values from the dictionary
-        for dict_value in i[4].values():
-            evaluated_value -= dict_value
-        # writing "evaluated value" in daily report
-        for cell in row_1_yearly:
-            if cell.value == proj:
-                col_index2 = cell.column
-        if evaluated_value > 0.02:
-            ws_daily.cell(row=row_index_to_evaluate, column=10).value = ws_yearly.cell(row=5, column=col_index2).value
-            ws_daily.cell(row=row_index_to_evaluate, column=11).value = evaluated_value
-            ws_daily.cell(row=row_index_to_evaluate, column=10).fill = summary_fill
-            ws_daily.cell(row=row_index_to_evaluate, column=11).fill = summary_fill
-            ws_daily.cell(row=row_index_to_evaluate, column=10).border = border
-            ws_daily.cell(row=row_index_to_evaluate, column=11).border = border
-            # adding "evaluated value" to the dictionary
-            i[4][ws_yearly.cell(row=5, column=col_index2).value] = evaluated_value
-        # actual completion of the monthly report
-        for key in i[4].keys():
-            for product in range(0, 10):
-                if key == ws_monthly.cell(row=2, column=col_index + product).value and (
-                        ws_monthly.cell(row=1, column=col_index + product).value == i[0] or ws_monthly.cell(
-                        row=1, column=col_index + product).value is None):
-                    ws_monthly.cell(row=int(dd) + 5, column=col_index + product).value = i[4][key]
+    def painting_monthly_and_yearly_reports(self):
+        """ Painting headers on green and elements cell on yellow in monthly and yearly reports.
+        :return:
+        """
+        # Painting green "pow_do_raportu"
+        for col in self.ws_yearly.iter_cols(
+                min_row=9,
+                max_row=self.yearly_max_row,
+                min_col=2,
+                max_col=self.yearly_max_col):
+            proj_done = 0
+            for cell in col:
+                if cell.value is not None:
+                    proj_done = 1
                     break
+            for cell in col:
+                test_color3 = str(cell.fill.start_color.index)
+                if cell.value is not None and test_color3[-6:] != 'FFFF00':
+                    proj_done = 0
+                    break
+            if proj_done == 1:
+                self.ws_yearly.cell(row=4, column=col[4].column).fill = green_fill
+                self.ws_yearly.cell(row=5, column=col[5].column).fill = green_fill
 
-    # Saving all report files
-    if safe_to_save == 1:
-        wb_month.save("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\Zestawienie miesieczne produkcji\\" + yyyy + "\\" + mm + "." + yyyy + "_GR.xlsx")
-        wb_daily.save("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\" + yyyy + "\\" + mm + "." + yyyy + "\\" + dd + "." + mm + "." + yyyy + "_GR.xlsx")
-        wb_pow_do_raportu.save("S:\\DPP\\5_ZESTAWIENIA PREFABRYKACJI\\RAPORT PRODUKCJI FILIGRAN DZIENNIE\\Produkcja płyt wg projektów - " + yyyy + "_GR.xlsx")
-        os.remove("C:\\Raporty\\" + dd + "." + mm + "." + yyyy + "_roboczy.xlsx")
+        for proj in self.ebawe_project_list:
+            stop_painting = 0
+            for proj_in_year in self.row_1_yearly:
+                if proj[0] == proj_in_year.value:
+                    list_of_proj_to_paint = [proj_in_year]
+                    proj_in_year_col = proj_in_year.column
+                    for index_increase in range(1, 11):
+                        if self.ws_yearly.cell(row=1, column=proj_in_year_col + index_increase).value is None:
+                            list_of_proj_to_paint.append(self.ws_yearly.cell(
+                                row=1, column=proj_in_year_col+index_increase))
+                        else:
+                            break
+                    len_to_paint = len(list_of_proj_to_paint)
+                    paint_or_not = 1
+                    for cell_number in range(0, len_to_paint):
+                        test_color4 = str(self.ws_yearly.cell(
+                            row=4, column=list_of_proj_to_paint[cell_number].column).fill.start_color.index)
+                        if test_color4[-6:] != '548235':
+                            paint_or_not = 0
+                            break
+                    if paint_or_not == 1:
+                        for proj_in_month in self.row_1_monthly:
+                            if proj[0] == proj_in_month.value:
+                                proj_in_month_col = proj_in_month.column
+                        for col_counter in range(0, len_to_paint):
+                            self.ws_yearly.cell(row=1, column=proj_in_year_col+col_counter).fill = green_fill
+                            self.ws_yearly.cell(row=2, column=proj_in_year_col+col_counter).fill = green_fill
+                            self.ws_yearly.cell(row=3, column=proj_in_year_col+col_counter).fill = green_fill
+                            # Painting yellow "month report"
+                            try:
+                                if col_counter == 0:
+                                    self.ws_monthly.cell(row=1, column=proj_in_month_col).fill = yellow_fill
+                                    self.ws_monthly.cell(row=2, column=proj_in_month_col).fill = yellow_fill
+                                    self.ws_monthly.cell(row=3, column=proj_in_month_col).fill = yellow_fill
+                                    self.ws_monthly.cell(row=4, column=proj_in_month_col).fill = yellow_fill
+                                else:
+                                    if self.ws_monthly.cell(
+                                            row=1, column=proj_in_month_col + col_counter).value is not None or \
+                                            self.ws_monthly.cell(
+                                                row=2, column=proj_in_month_col + col_counter).value is None:
+                                        stop_painting += 1
+                                    if stop_painting == 0:
+                                        self.ws_monthly.cell(
+                                            row=2, column=proj_in_month_col+col_counter).fill = yellow_fill
+                                        self.ws_monthly.cell(
+                                            row=3, column=proj_in_month_col+col_counter).fill = yellow_fill
+                            except NameError:
+                                warn = f"Nie znaleziono odpowiedniego projektu\nw Excelu z miesięcznym raportem:\n\n" \
+                                       f"{proj[0]}\n\nSkrypt zamknie się bez zapisywania żadnych zmian.\n\n" \
+                                       f"Sprawdź, czy projekt znajduje się w tabeli\nz miesięcznym raportem " \
+                                       f"i czy jest poprawnie wpisany.\nNastępnie uruchom skrypt ponownie."
+                                warning_msg_box(warn)
 
-        warning_msg_box("JUŻ  :)")
+        # Saving temporary file
+        if safe_to_save == 1:
+            self.wb_daily.save(self.config.TEMPORARY_FILE)
+
+    def filling_monthly_report(self):
+        """ Filling month report and ExcelCompiler stuff which calculate value from formula
+        :return:
+        """
+        excel_comp_obj = ExcelCompiler(filename=self.config.TEMPORARY_FILE)
+        for proj in self.ebawe_project_list:
+            col_index = "test"
+            proj_name = proj[0]
+            for cell in self.row_1_monthly:
+                if cell.value == proj_name:
+                    col_index = cell.column
+            try:
+                col_index += 0
+            except (NameError, TypeError):
+                os.remove(self.config.TEMPORARY_FILE)
+                warn = f"Nie znaleziono odpowiedniego projektu\nw Excelu z miesięcznym raportem:\n\n{proj_name}\n\n" \
+                       f"Skrypt zamknie się bez zapisywania żadnych zmian.\n\n" \
+                       f"Sprawdź, czy projekt znajduje się w tabeli\n" \
+                       f"z miesięcznym raportem i czy jest poprawnie wpisany.\nNastępnie uruchom skrypt ponownie."
+                warning_msg_box(warn)
+            row_index_to_evaluate = proj[1]+proj[2]+4
+            evaluated_value = excel_comp_obj.evaluate(f"E{ebawe}!F{row_index_to_evaluate}")
+            # subtracting from the "evaluated value" values from the dictionary
+            for dict_value in proj[4].values():
+                evaluated_value -= dict_value
+            # writing "evaluated value" in daily report
+            for cell in self.row_1_yearly:
+                if cell.value == proj_name:
+                    col_index2 = cell.column
+            if evaluated_value > 0.02:
+                self.ws_daily.cell(row=row_index_to_evaluate, column=10).value = self.ws_yearly.cell(
+                    row=5, column=col_index2).value
+                self.ws_daily.cell(row=row_index_to_evaluate, column=11).value = evaluated_value
+                self.ws_daily.cell(row=row_index_to_evaluate, column=10).fill = summary_fill
+                self.ws_daily.cell(row=row_index_to_evaluate, column=11).fill = summary_fill
+                self.ws_daily.cell(row=row_index_to_evaluate, column=10).border = border
+                self.ws_daily.cell(row=row_index_to_evaluate, column=11).border = border
+                # adding "evaluated value" to the dictionary
+                proj[4][self.ws_yearly.cell(row=5, column=col_index2).value] = evaluated_value
+            # actual completion of the monthly report
+            for key in proj[4].keys():
+                for product in range(0, 10):
+                    if key == self.ws_monthly.cell(row=2, column=col_index+product).value and \
+                            (self.ws_monthly.cell(row=1, column=col_index+product).value == proj[0] or
+                             self.ws_monthly.cell(row=1, column=col_index + product).value is None):
+                        self.ws_monthly.cell(row=int(dd)+5, column=col_index+product).value = proj[4][key]
+                        break
+
+    def saving_all_reports_files(self):
+        if safe_to_save == 1:
+            self.wb_month.save(self.config.MONTHLY_TEMP_PATH)
+            self.wb_daily.save(self.config.DAILY_TEMP_PATH)
+            self.wb_yearly.save(self.config.YEARLY_TEMP_PATH)
+            os.remove(self.config.TEMPORARY_FILE)
+
+            warning_msg_box("JUŻ  :)")
 
 # endregion
 
 
 if __name__ == "__main__":
-    welcome_message_box()
+    # Run welcome message box to take date and number of production line from user (globar variables)
+    report_welcome_message_box()
+
+    # Validate given data from user
     if dd == "" or mm == "" or yyyy == "" or ebawe == "":
         warning_msg = "Nie podano wszystkich danych w oknie startowym!\nKończę skrypt."
         warning_msg_box(warning_msg)
@@ -484,8 +509,13 @@ if __name__ == "__main__":
         warning_msg = "Wszystkie dane w oknie startowym muszą być numeryczne!\nKończę skrypt."
         warning_msg_box(warning_msg)
 
-    config_obj = Config(dd="09", mm="08", yyyy="2024", ebawe="1")
-    print(type(config_obj))
+    # Create config object
+    # TODO: comment out the proper line from next two lines
+    # config_obj = config_env['production'](dd=dd, mm=mm, yyyy=yyyy, ebawe=ebawe)
+    config_obj = config_env['testing'](dd=dd, mm=mm, yyyy=yyyy, ebawe=ebawe)
 
-    create_report(config=config_obj)
+    x = input("I co kurwa dalej? xD")
 
+    # Init and call Report object
+    report_obj = Report(config=config_obj)
+    report_obj()
