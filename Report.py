@@ -206,14 +206,14 @@ class Report:
                             test_color2 = str(self.ws_yearly.cell(
                                 row=num+8, column=col_index_in_yearly+index_increase).fill.start_color.index)
                             if test_color2[-6:] != 'FFFF00':
-                                self.ws_daily.cell(row=proj[1]+el+3, column=6).value = self.ws_yearly.cell(
-                                    row=num+8, column=col_index_in_yearly+index_increase).value
-                                self.ws_yearly.cell(
-                                    row=num + 8, column=col_index_in_yearly + index_increase).fill = yellow_fill
-                                self.ws_daily.cell(row=proj[1]+el+3, column=11).value = self.ws_yearly.cell(
-                                    row=num+8, column=col_index_in_yearly+index_increase).value
-                                self.ws_daily.cell(row=proj[1]+el+3, column=10).value = self.ws_yearly.cell(
-                                    row=5, column=col_index_in_yearly+index_increase).value
+                                self.ws_daily.cell(row=proj[1]+el+3, column=6).value = \
+                                    self.ws_yearly.cell(row=num+8, column=col_index_in_yearly+index_increase).value
+                                self.ws_yearly.cell(row=num+8, column=col_index_in_yearly+index_increase).fill = \
+                                    yellow_fill
+                                self.ws_daily.cell(row=proj[1]+el+3, column=11).value = \
+                                    self.ws_yearly.cell(row=num+8, column=col_index_in_yearly+index_increase).value
+                                self.ws_daily.cell(row=proj[1]+el+3, column=10).value = \
+                                    self.ws_yearly.cell(row=5, column=col_index_in_yearly+index_increase).value
                                 self.ws_daily.cell(row=proj[1]+el+3, column=10).fill = pink_fill
                                 self.ws_daily.cell(row=proj[1]+el+3, column=11).fill = pink_fill
                                 area_found = 1
