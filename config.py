@@ -37,3 +37,7 @@ config_env = {
     'production': Config,
     'testing': TestConfig
 }
+
+
+if __name__ == "__main__":
+    print("To nie jest plik wykonywalny mordeczko.\n\nPrzeczytaj README :)")

@@ -91,3 +91,7 @@ def warning_msg_box(msg: str, end: bool = True):
     warning_window.mainloop()
     if end:
         sys.exit()
+
+
+if __name__ == "__main__":
+    warning_msg_box("To nie jest plik wykonywalny mordeczko.\n\nPrzeczytaj README :)")
