@@ -20,16 +20,17 @@ class Config:
         self.TEMPORARY_FILE = Path(os.environ.get('TEMPORARY_FILE').format(DD=dd, MM=mm, YYYY=yyyy))
 
 
-class TestConfig(Config):
-    TEMPLATE_PATH = Path('test_data/Szablon.xlsx')
-    EBAWE_REPORT_PATH = Path('test_data/')
-    DAILY_PATH = Path('test_data/')
-    DAILY_TEMP_PATH = Path('test_data/')
-    MONTHLY_PATH = Path('test_data/')
-    MONTHLY_TEMP_PATH = Path('test_data/')
-    YEARLY_PATH = Path('test_data/')
-    YEARLY_TEMP_PATH = Path('test_data/')
-    TEMPORARY_FILE = Path('test_data/')
+class TestConfig:
+    def __init__(self, dd: str, mm: str, yyyy: str, ebawe: str):
+        self.TEMPLATE_PATH = Path('test_data/Szablon.xlsx')
+        self.EBAWE_REPORT_PATH = Path(f'test_data/E{ebawe}_{dd}.{mm}.{yyyy}.xlsx')
+        self.DAILY_PATH = Path(f'test_data/Dzienny_{dd}.{mm}.{yyyy}.xlsx')
+        self.DAILY_TEMP_PATH = Path(f'test_data/Dzienny_{dd}.{mm}.{yyyy}_test.xlsx')
+        self.MONTHLY_PATH = Path(f'test_data/Miesięczny_{mm}.{yyyy}.xlsx')
+        self.MONTHLY_TEMP_PATH = Path(f'test_data/Miesięczny_{mm}.{yyyy}_test.xlsx')
+        self.YEARLY_PATH = Path(f'test_data/Roczny_{yyyy}.xlsx')
+        self.YEARLY_TEMP_PATH = Path(f'test_data/Roczny_{yyyy}_test.xlsx')
+        self.TEMPORARY_FILE = Path('test_data/tymczasowy.xlsx')
 
 
 config_env = {
