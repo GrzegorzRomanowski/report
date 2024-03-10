@@ -1,11 +1,10 @@
-import sys
 import os
-import tkinter as tk
 import openpyxl
 from openpyxl.styles import PatternFill, Border, Side, Font
 from pycel import ExcelCompiler
 
 from config import config_env, Config
+from interface import report_welcome_message_box, warning_msg_box
 
 
 # region Initialization
@@ -26,104 +25,14 @@ thick_border = Border(top=thick_edge, bottom=thick_edge, left=thick_edge, right=
 # fonts
 font_bold = Font(bold=True)
 
-
-# Init global variables
-dd = str()
-mm = str()
-yyyy = str()
-ebawe = str()
-safe_to_save = 1
-
-# endregion
-
-
-# region Interface
-def report_welcome_message_box():
-    """ Tkinter welcome window that asks for the date and number of the production line to be reported.
-    :return:
-    """
-    ask_window = tk.Tk()
-    ask_window.title("inBet  Report")
-    ask_window.geometry("250x195")
-
-    ask_label = tk.Label(ask_window, text="Za jaki dzień zrobić raport?\nZ której linii produkcyjnej?")
-    ask_label.pack(pady=5, padx=5)
-
-    ask_frame = tk.Frame(ask_window)
-    ask_frame.pack(pady=5, padx=5)
-
-    ask_day = tk.Entry(ask_frame, width=6)
-    ask_day.grid(pady=2, padx=2, row=0, column=0)
-    ask_day.insert(0, "dd")
-
-    ask_month = tk.Entry(ask_frame, width=6)
-    ask_month.grid(pady=2, padx=2, row=0, column=1)
-    ask_month.insert(0, "mm")
-
-    ask_year = tk.Entry(ask_frame, width=10)
-    ask_year.grid(pady=2, padx=2, row=0, column=2)
-    ask_year.insert(0, "yyyy")
-
-    ebawe_label = tk.Label(ask_frame, text="EBAWE: ")
-    ebawe_label.grid(pady=18, padx=2, row=1, columnspan=2, column=0)
-
-    ask_ebawe = tk.Entry(ask_frame, width=10)
-    ask_ebawe.grid(pady=18, padx=2, row=1, column=2)
-    ask_ebawe.insert(0, "1")
-
-    def confirm_button():
-        global dd, mm, yyyy, ebawe
-        dd = ask_day.get()
-        mm = ask_month.get()
-        yyyy = ask_year.get()
-        ebawe = ask_ebawe.get()
-        if dd == "" or mm == "" or yyyy == "" or ebawe == "":
-            warning_msg1 = "Nie podano wszystkich danych w oknie startowym!"
-            warning_msg_box(warning_msg1, end=False)
-        elif not dd.isnumeric() or not mm.isnumeric() or not yyyy.isnumeric():
-            warning_msg2 = "Wszystkie dane w oknie startowym muszą być numeryczne!"
-            warning_msg_box(warning_msg2, end=False)
-        else:
-            ask_window.destroy()
-
-    ask_button = tk.Button(ask_window, text="Zatwierdź", command=confirm_button, width=25, height=2)
-    ask_button.pack(pady=5, padx=5)
-
-    ask_window.mainloop()
-
-
-# Warning message box
-def warning_msg_box(msg: str, end: bool = True):
-    """ Message box with error.
-    :param msg: Warning message to be shown
-    :param end: Should kill script execution?
-    :return:
-    """
-    warning_window = tk.Tk()
-    warning_window.title("Warning !")
-
-    warning_label = tk.Label(warning_window, text=msg)
-    warning_label.pack(pady=20, padx=25)
-    print(msg)
-
-    def warning_button(end_button: bool = end):
-        global safe_to_save
-        warning_window.destroy()
-        if end_button:
-            safe_to_save = 0
-            sys.exit()
-    warning_button = tk.Button(warning_window, text="OK", command=warning_button, width=25, height=2)
-    warning_button.pack(pady=10, padx=15)
-
-    warning_window.mainloop()
-
 # endregion
 
 
 # region Transform data
 class Report:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, user_data: dict):
         self.config = config
+        self.user_data = user_data
         # Load Workbooks (wb)
         try:
             self.wb_ebawe = openpyxl.load_workbook(config.EBAWE_REPORT_PATH)
@@ -149,9 +58,9 @@ class Report:
 
         # Load Worksheets (ws)
         self.ws_ebawe = self.wb_ebawe.active
-        self.ws_daily = self.wb_daily[f"E{ebawe}"]
+        self.ws_daily = self.wb_daily[f"E{self.user_data['ebawe']}"]
         self.ws_yearly = self.wb_yearly.active
-        self.ws_monthly = self.wb_month[f"E{ebawe}"]
+        self.ws_monthly = self.wb_month[f"E{self.user_data['ebawe']}"]
         # Row 1 variables
         self.row_1_yearly = self.ws_yearly[1]
         self.row_1_monthly = self.ws_monthly[1]
@@ -202,8 +111,8 @@ class Report:
         :return:
         """
         # Heading
-        self.ws_daily['H8'] = f"{dd}.{mm}.{yyyy}"
-        self.ws_daily['H10'] = f"E{ebawe}"
+        self.ws_daily['H8'] = f"{self.user_data['dd']}.{self.user_data['mm']}.{self.user_data['yyyy']}"
+        self.ws_daily['H10'] = f"E{self.user_data['ebawe']}"
 
         # Reducing row height
         small_rows = (4, 5, 6, 7, 9, 11)
@@ -259,10 +168,10 @@ class Report:
                 try:
                     num = int(self.ws_ebawe.cell(row=proj[1]+el+3, column=3).value)
                 except ValueError:
-                    war = f"Nr elementu:  {self.ws_ebawe.cell(row=proj[1]+el+3, column=3).value}\nz projektu:  " \
-                          f"{proj[0]}\n\nnie jest liczbą.\nSkrypt zamknie się bez zapisywania żadnych zmian.\n" \
-                          f"Sprawdź numery elementów i uruchom skrypt ponownie."
-                    warning_msg_box(war)
+                    warn = f"Nr elementu:  {self.ws_ebawe.cell(row=proj[1]+el+3, column=3).value}\nz projektu:  " \
+                           f"{proj[0]}\n\nnie jest liczbą.\nSkrypt zamknie się bez zapisywania żadnych zmian.\n" \
+                           f"Sprawdź numery elementów i uruchom skrypt ponownie."
+                    warning_msg_box(warn)
                 self.ws_daily.cell(row=proj[1]+el+3, column=3).value = self.ws_ebawe.cell(
                     row=proj[1]+el+3, column=3).value
                 self.ws_daily.cell(row=proj[1]+el+3, column=3).border = border
@@ -286,9 +195,9 @@ class Report:
                         self.ws_yearly.cell(row=num+8, column=col_index_in_yearly).fill = yellow_fill
                     else:
                         warn = f"Próbujesz wpisać do raportów płytę,\nktóra już wcześniej była zaraportowana:\n\n" \
-                              f"Projekt:  {proj[0]}\nNumer elementu:  {num}\n\n" \
-                              f"Skrypt zamknie się bez zapisywania żadnych zmian.\n" \
-                              f"Zweryfikuj błąd i uruchom skrypt ponownie."
+                               f"Projekt:  {proj[0]}\nNumer elementu:  {num}\n\n" \
+                               f"Skrypt zamknie się bez zapisywania żadnych zmian.\n" \
+                               f"Zweryfikuj błąd i uruchom skrypt ponownie."
                         warning_msg_box(warn)
                 else:
                     # Looking for the area in the next 10 columns on the right
@@ -434,8 +343,7 @@ class Report:
                                 warning_msg_box(warn)
 
         # Saving temporary file
-        if safe_to_save == 1:
-            self.wb_daily.save(self.config.TEMPORARY_FILE)
+        self.wb_daily.save(self.config.TEMPORARY_FILE)
 
     def filling_monthly_report(self):
         """ Filling month report and ExcelCompiler stuff which calculate value from formula
@@ -458,7 +366,7 @@ class Report:
                        f"z miesięcznym raportem i czy jest poprawnie wpisany.\nNastępnie uruchom skrypt ponownie."
                 warning_msg_box(warn)
             row_index_to_evaluate = proj[1]+proj[2]+4
-            evaluated_value = excel_comp_obj.evaluate(f"E{ebawe}!F{row_index_to_evaluate}")
+            evaluated_value = excel_comp_obj.evaluate(f"E{self.user_data['ebawe']}!F{row_index_to_evaluate}")
             # subtracting from the "evaluated value" values from the dictionary
             for dict_value in proj[4].values():
                 evaluated_value -= dict_value
@@ -482,40 +390,46 @@ class Report:
                     if key == self.ws_monthly.cell(row=2, column=col_index+product).value and \
                             (self.ws_monthly.cell(row=1, column=col_index+product).value == proj[0] or
                              self.ws_monthly.cell(row=1, column=col_index + product).value is None):
-                        self.ws_monthly.cell(row=int(dd)+5, column=col_index+product).value = proj[4][key]
+                        self.ws_monthly.cell(row=int(self.user_data['dd'])+5,
+                                             column=col_index+product).value = proj[4][key]
                         break
 
     def saving_all_reports_files(self):
-        if safe_to_save == 1:
-            self.wb_month.save(self.config.MONTHLY_TEMP_PATH)
-            self.wb_daily.save(self.config.DAILY_TEMP_PATH)
-            self.wb_yearly.save(self.config.YEARLY_TEMP_PATH)
-            os.remove(self.config.TEMPORARY_FILE)
+        self.wb_month.save(self.config.MONTHLY_TEMP_PATH)
+        self.wb_daily.save(self.config.DAILY_TEMP_PATH)
+        self.wb_yearly.save(self.config.YEARLY_TEMP_PATH)
+        os.remove(self.config.TEMPORARY_FILE)
 
-            warning_msg_box("JUŻ  :)")
+        warning_msg_box("JUŻ  :)")
 
 # endregion
 
 
 if __name__ == "__main__":
-    # Run welcome message box to take date and number of production line from user (globar variables)
-    report_welcome_message_box()
+    # Run welcome message box to take date and number of production line from user
+    user_input = report_welcome_message_box()
 
     # Validate given data from user
-    if dd == "" or mm == "" or yyyy == "" or ebawe == "":
+    if user_input['dd'] == "" or user_input['mm'] == "" or user_input['yyyy'] == "" or user_input['ebawe'] == "":
         warning_msg = "Nie podano wszystkich danych w oknie startowym!\nKończę skrypt."
         warning_msg_box(warning_msg)
-    elif not dd.isnumeric() or not mm.isnumeric() or not yyyy.isnumeric():
-        warning_msg = "Wszystkie dane w oknie startowym muszą być numeryczne!\nKończę skrypt."
+    elif not user_input['dd'].isnumeric() or not user_input['mm'].isnumeric() or not user_input['yyyy'].isnumeric():
+        warning_msg = "Dane z datą w oknie startowym muszą być numeryczne!\nKończę skrypt."
         warning_msg_box(warning_msg)
+
+    x = input("I co dalej xD ? : ")
 
     # Create config object
     # TODO: comment out the proper line from next two lines
-    # config_obj = config_env['production'](dd=dd, mm=mm, yyyy=yyyy, ebawe=ebawe)
-    config_obj = config_env['testing'](dd=dd, mm=mm, yyyy=yyyy, ebawe=ebawe)
-
-    x = input("I co kurwa dalej? xD")
+    # config_obj = config_env['production'](dd=user_input['dd'],
+    #                                       mm=user_input['mm'],
+    #                                       yyyy=user_input['yyyy'],
+    #                                       ebawe=user_input['ebawe'])
+    config_obj = config_env['testing'](dd=user_input['dd'],
+                                       mm=user_input['mm'],
+                                       yyyy=user_input['yyyy'],
+                                       ebawe=user_input['ebawe'])
 
     # Init and call Report object
-    report_obj = Report(config=config_obj)
+    report_obj = Report(config=config_obj, user_data=user_input)
     report_obj()
