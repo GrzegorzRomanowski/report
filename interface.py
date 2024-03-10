@@ -2,9 +2,9 @@ import sys
 import tkinter as tk
 
 
-def report_welcome_message_box():
+def report_welcome_message_box() -> dict:
     """ Tkinter welcome window that asks for the date and number of the production line to be reported.
-    :return:
+    :return: Dictionary with data taken from user.
     """
     ask_window = tk.Tk()
     ask_window.title("inBet  Report")
@@ -42,7 +42,7 @@ def report_welcome_message_box():
         'ebawe': str()
     }
 
-    def confirm_button(out_dict=output_dict):
+    def confirm_button(out_dict: dict = output_dict):
         dd = ask_day.get()
         mm = ask_month.get()
         yyyy = ask_year.get()

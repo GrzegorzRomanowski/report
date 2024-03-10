@@ -417,8 +417,6 @@ if __name__ == "__main__":
         warning_msg = "Dane z datą w oknie startowym muszą być numeryczne!\nKończę skrypt."
         warning_msg_box(warning_msg)
 
-    x = input("I co dalej xD ? : ")
-
     # Create config object
     # TODO: comment out the proper line from next two lines
     # config_obj = config_env['production'](dd=user_input['dd'],
