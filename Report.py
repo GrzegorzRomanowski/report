@@ -400,7 +400,7 @@ class Report:
         self.wb_yearly.save(self.config.YEARLY_TEMP_PATH)
         os.remove(self.config.TEMPORARY_FILE)
 
-        warning_msg_box("JUŻ  :)")
+        warning_msg_box("RAPORTY JUŻ GOTOWE :)")
 
 # endregion
 
@@ -418,16 +418,27 @@ if __name__ == "__main__":
         warning_msg_box(warning_msg)
 
     # Create config object
-    # TODO: comment out the proper line from next two lines
-    # config_obj = config_env['production'](dd=user_input['dd'],
-    #                                       mm=user_input['mm'],
-    #                                       yyyy=user_input['yyyy'],
-    #                                       ebawe=user_input['ebawe'])
-    config_obj = config_env['testing'](dd=user_input['dd'],
-                                       mm=user_input['mm'],
-                                       yyyy=user_input['yyyy'],
-                                       ebawe=user_input['ebawe'])
+    # TODO: switch next line to 'False' on production!!!
+    testing = True
+    if testing:
+        # Deleting output files from the latest run
+        test_files_list = [file for file in os.listdir('test_data') if "_test" in file]
+        for file in test_files_list:
+            os.remove(rf'test_data/{file}')
+
+        config_obj = config_env['testing'](dd=user_input['dd'],
+                                           mm=user_input['mm'],
+                                           yyyy=user_input['yyyy'],
+                                           ebawe=user_input['ebawe'])
+    else:
+        config_obj = config_env['production'](dd=user_input['dd'],
+                                              mm=user_input['mm'],
+                                              yyyy=user_input['yyyy'],
+                                              ebawe=user_input['ebawe'])
 
     # Init and call Report object
-    report_obj = Report(config=config_obj, user_data=user_input)
-    report_obj()
+    try:
+        report_obj = Report(config=config_obj, user_data=user_input)
+        report_obj()
+    except Exception as e:
+        warning_msg_box(str(e))
